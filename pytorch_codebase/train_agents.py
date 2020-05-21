@@ -25,7 +25,7 @@ import gc
 #####################################################################
 # SET LOGPATH DEPENDING ON USER
 #####################################################################
-LOGPATH = "../"  # CMSCLUSTER LOGPATH
+LOGPATH = "./"  # CMSCLUSTER LOGPATH
 # LOGPATH = "/Users/surajnair/Documents/Tech/research/MADDPG_HFO/"
 # LOGPATH = "/Users/anshulramachandran/Documents/Research/yisong/"
 # LOGPATH = "/home/anshul/Desktop/"
@@ -54,13 +54,13 @@ EPS_GREEDY_MIN = 0.1
 capacity = 1000000  # Capacity of Replay Buffer
 batch_size = 1024
 eps_before_train = 10
-GPUENABLED = True  # Use GPU or only CPU
+GPUENABLED = th.cuda.is_available()  # Use GPU or only CPU
 PORT = int(sys.argv[1])  # Port on which HFO Server Runs
 SEED = int(sys.argv[4])  # Random Seed
 
 FloatTensor = torch.cuda.FloatTensor if th.cuda.is_available() else torch.FloatTensor
 # Command to restart server
-server_launch_command = "./bin/HFO --headless --frames-per-trial=500 \
+server_launch_command = "./HFO/bin/HFO --headless --frames-per-trial=500 \
                         --untouched-time=500 --no-logging --fullstate \
                         --offense-agents=2 --defense-npcs=1 --seed " + \
                         sys.argv[4] + " --port " + str(PORT)
@@ -83,7 +83,7 @@ def connect():
     '''
     hfo = HFOEnvironment()
     hfo.connectToServer(LOW_LEVEL_FEATURE_SET,
-                        'bin/teams/base/config/formations-dt', PORT,
+                        './HFO/bin/teams/base/config/formations-dt', PORT,
                         'localhost', 'base_left', False)
     return hfo
 

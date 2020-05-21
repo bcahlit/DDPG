@@ -4,7 +4,7 @@
 
 python 3.6
 
-pytorch >= 0.3.0
+pytorch >= 1.3.0
 
 hfo 0.1.5
 
@@ -12,14 +12,13 @@ hdf5 1.10.1
 
 h5py 2.7.1
 
-If using GPU, CUDA 8 and CuDNN 7
-
 ## To Launch
-From the HFO folder, run the train_agents.sh file to launch. Command looks like
+From the project folder, run the train_agents.sh file to launch. Command looks like
+ln HFO to project
+'ln -s /Users/bcahlit/environment/HFO ./ '
+'bash ./pytorch_codebase/train_agents.sh [random seed] [port] [lognum] [options]'
 
-'bash ../pytorch_codebase/train_agents.sh [random seed] [port] [lognum] [options]'
-
-'bash ../pytorch_codebase/train_agents.sh 92 5000 9 1'
+'bash ./pytorch_codebase/train_agents.sh 92 5000 9 1'
 
 Models are saved to pytorch_models folder. To playback and existing model set the PLAYBACK flag to True and set the appropriate model to load in the train_agents.py file.
 

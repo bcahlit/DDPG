@@ -20,7 +20,9 @@ import subprocess
 from pympler import asizeof
 import time
 import gc
+from utils import set_log_files
 
+set_log_files("./logging")
 
 #####################################################################
 # SET LOGPATH DEPENDING ON USER
@@ -287,7 +289,7 @@ def run_process(maddpg, player_num, player_queue, root_queue, feedback_queue, st
             ###########################################################
             if terminal:
                 print(terminal)
-                print('| Reward: ', rr, " | Episode", ep)
+                print('| 292Reward: ', rr, " | Episode", ep)
                 break
 
             # Get latest model if available
@@ -542,7 +544,7 @@ def run():
                                        sts1.cuda(), rws.cuda())
                 else:
                     maddpg.memory.push(sts, acts, sts1, rws)
-
+            logging.debug("MAIN LOOP2")
             ###################################################################
             # If server crashes empty queue and reboot server and child
             # processes
@@ -594,7 +596,7 @@ def run():
                 p2.start()
                 continue
             ###################################################################
-
+            logging.debug("MAIN LOOP3")
             ###################################################################
             # At The End of each episode log stats and update policy
             ###################################################################
@@ -664,7 +666,7 @@ def run():
                 r1.put(copy_maddpg)
                 r2.put(copy_maddpg)
             ###################################################################
-
+            logging.debug("MAIN LOOP4")
             # Timing queue for the child processes
             fdbk1.put(0)
             fdbk2.put(0)
@@ -674,6 +676,7 @@ def run():
                 if itr % 10 == 0:
                     c_loss, a_loss = maddpg.update_policy(prioritized=True)
             maddpg.steps_done += 1
+            logging.debug("MAIN LOOP5")
             itr += 1
     except Exception as e:
         r1.put(None)

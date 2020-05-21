@@ -327,7 +327,7 @@ class OMADDPG:
                 soft_update(self.actors_target[i], self.actors[i], self.tau)
             soft_update(self.meta_actor_target, self.meta_actor, self.tau)
 
-        print("UPDATETIME", time.time() - t0)
+        print("end——UPDATETIME", time.time() - t0)
         print("LOSSES", loss_Q, actor_loss_total)
         return loss_Q, actor_loss_total
 

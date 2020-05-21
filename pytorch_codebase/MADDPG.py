@@ -12,7 +12,10 @@ import os
 from collections import namedtuple
 import time
 from scipy.cluster.vq import kmeans
+import logging
+from utils import set_log_files
 
+set_log_files("./")
 
 def soft_update(target, source, t):
     '''
@@ -364,7 +367,10 @@ class OMADDPG:
         '''
         Returns Q value for certain state,action pairs, used for logging
         '''
-        return self.critics[0](state_batch, action_batch)
+        logging.debug("3.1.7.0" + str(self.critics[0]))
+        critic_pre = self.critics[0].forward(state_batch, action_batch)
+        logging.debug(str(critic_pre))
+        return critic_pre
 
 
 class MADDPG:

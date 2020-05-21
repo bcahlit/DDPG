@@ -20,9 +20,10 @@ import subprocess
 from pympler import asizeof
 import time
 import gc
+import logging
 from utils import set_log_files
 
-set_log_files("./logging")
+set_log_files("./")
 
 #####################################################################
 # SET LOGPATH DEPENDING ON USER
@@ -320,7 +321,7 @@ def extra_stats(maddpg, player_num, opt=0):
     '''
     Records extra metrics on the performance of the model
     '''
-
+    logging.debug("3_1.3")
     # Samples a batch
     transitions = maddpg.memory.sample(batch_size)
     if OPTIONS:
@@ -329,7 +330,7 @@ def extra_stats(maddpg, player_num, opt=0):
         batch = Experience(*zip(*transitions))
     s_batch = Variable(th.stack(batch.states))
     action_batch = Variable(th.stack(batch.actions))
-
+    logging.debug("3_1.4")
     whole_state = s_batch.view(batch_size, -1)
     move_batch = action_batch.clone()
     turn_batch = action_batch.clone()
@@ -337,7 +338,7 @@ def extra_stats(maddpg, player_num, opt=0):
     kick_batch = action_batch.clone()
     good_batch = action_batch.clone()
     bad_batch = action_batch.clone()
-
+    logging.debug("3_1.5")
     # For each element in the batch create an example for the different
     # types of actions
     for ind, elem in enumerate(s_batch):
@@ -364,17 +365,18 @@ def extra_stats(maddpg, player_num, opt=0):
             np.array([1, 0, 0, 0, 10, ang, 0, 0, 0, 0])))
         bad_batch[ind, player_num] = Variable(torch.FloatTensor(
             np.array([1, 0, 0, 0, 10, bad_ang, 0, 0, 0, 0])))
-
+    logging.debug("3_1.6")
     move_batch = move_batch.view(batch_size, -1)
     turn_batch = turn_batch.view(batch_size, -1)
     tackle_batch = tackle_batch.view(batch_size, -1)
     kick_batch = kick_batch.view(batch_size, -1)
     good_batch = good_batch.view(batch_size, -1)
     bad_batch = bad_batch.view(batch_size, -1)
-
+    logging.debug("3_1.7")
     # Get Q values for the different types of actions
     target_move = maddpg.critic_predict(
         whole_state, move_batch, player_num)
+    logging.debug("3_1.7.1")
     target_turn = maddpg.critic_predict(
         whole_state, turn_batch, player_num)
     target_tackle = maddpg.critic_predict(
@@ -384,14 +386,14 @@ def extra_stats(maddpg, player_num, opt=0):
     target_good = maddpg.critic_predict(
         whole_state, good_batch, player_num)
     target_bad = maddpg.critic_predict(whole_state, bad_batch, player_num)
-
+    logging.debug("3_1.8")
     ep_move_q = target_move.mean().data.cpu().numpy()
     ep_turn_q = target_turn.mean().data.cpu().numpy()
     ep_tackle_q = target_tackle.mean().data.cpu().numpy()
     ep_kick_q = target_kick.mean().data.cpu().numpy()
     ep_good_q = target_good.mean().data.cpu().numpy()
     ep_bad_q = target_bad.mean().data.cpu().numpy()
-
+    logging.debug("3_1.9")
     player_stats = [ep_move_q, ep_turn_q,
                     ep_tackle_q, ep_kick_q, ep_good_q, ep_bad_q]
     return player_stats
@@ -602,17 +604,20 @@ def run():
             ###################################################################
             if (terminal1 != 0):
                 # Write logs to the log file
+                logging.debug("MAIN LOOP3.1")
                 if len(maddpg.memory.memory) > batch_size:
+                    logging.debug("MAIN LOOP3.1.1")
                     p1_logstats = extra_stats(maddpg, 0)
                     p2_logstats = extra_stats(maddpg, 1)
                     all_logstats = np.stack([p1_logstats, p2_logstats])
-
+                    logging.debug("MAIN LOOP3.1.2")
                     dset_move[:, maddpg.episode_done] = all_logstats[:, 0]
                     dset_turn[:, maddpg.episode_done] = all_logstats[:, 1]
                     dset_tackle[:, maddpg.episode_done] = all_logstats[:, 2]
                     dset_kick[:, maddpg.episode_done] = all_logstats[:, 3]
                     dset_good[:, maddpg.episode_done] = all_logstats[:, 4]
                     dset_bad[:, maddpg.episode_done] = all_logstats[:, 5]
+                    logging.debug("MAIN LOOP3.2")
                     if OPTIONS:
                         for j1 in range(N_OPTIONS):
                             dset_options[
@@ -630,16 +635,18 @@ def run():
                     dset_bad.flush()
                     if OPTIONS:
                         dset_options.flush()
+                    logging.debug("MAIN LOOP3.3")
+                logging.debug("MAIN LOOP3.3.1")
                 dset_rewards[:, maddpg.episode_done] = np.array(
                     [episode_rew1, episode_rew2]).reshape((1, 2))
                 dset_rewards.flush()
-
+                logging.debug("MAIN LOOP3.4")
                 # If not playing back update policy
                 if PLAYBACK:
                     c_loss, a_loss = None, None
                 else:
                     c_loss, a_loss = maddpg.update_policy(prioritized=True)
-
+                logging.debug("MAIN LOOP3.5")
                 # Write the losses to the log file
                 if c_loss is not None:
                     if OPTIONS:
@@ -657,7 +664,7 @@ def run():
                     dset_aloss.flush()
                 dset_numdone[0] = maddpg.episode_done
                 dset_numdone.flush()
-
+                logging.debug("MAIN LOOP3.6")
                 # Creates a lightweight version of the model to send to the
                 # processes
                 copy_maddpg = copy.deepcopy(maddpg)

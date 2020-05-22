@@ -197,8 +197,9 @@ class OMADDPG:
         actor_loss_total = 0.0
 
         for agent in range(self.n_agents):
+            copy_nfns = non_final_next_states.clone()
             meta_state = state_batch[:, agent]
-
+            logging.debug("start for`")
             # Order it so that the current agents state is first and other
             # agents is second
             index = th.LongTensor([agent, 1 - agent]).type(LongTensor)
@@ -208,21 +209,25 @@ class OMADDPG:
             action_batch_ordered[:, index] = action_batch_ordered
             whole_state = state_batch_ordered.view(self.batch_size, -1)
             whole_action = action_batch_ordered.view(self.batch_size, -1)
-
+            logging.debug("read data")
             current_Q = self.critics[0](whole_state, whole_action)
-
+            logging.debug("current_Q")
             # Non terminal next states, and non-terminal next actions
-            non_final_next_actions = [self.select_action(non_final_next_states[:,
+            non_final_next_actions = [self.select_action(copy_nfns[:,
                                                                                i,
                                                                                :], target=False)[0] for i in range(self.n_agents)]
+            logging.debug("generate nfna")
             non_final_next_actions = th.stack(non_final_next_actions)
+            logging.debug("nfna"+str(non_final_next_actions.shape))
             non_final_next_actions = (
                 non_final_next_actions.transpose(0,
                                                  1).contiguous())
+            logging.debug("nfna_transpose"+str(non_final_next_actions.shape))
             # Reorder them so that state and action of current player is first
             # and other agents is second
-            non_final_next_states_ordered = non_final_next_states.clone()
+            non_final_next_states_ordered = copy_nfns 
             non_final_next_actions_ordered = non_final_next_actions.clone()
+            logging.debug("clone")
             non_final_next_states_ordered[
                 :, index] = non_final_next_states_ordered
             non_final_next_actions_ordered[
@@ -230,24 +235,25 @@ class OMADDPG:
 
             # Computer target Q for t+1
             target_Q = th.zeros(self.batch_size).type(FloatTensor)
-            target_Q[non_final_mask] = self.critics[0](
+            logging.debug("critic"+str(non_final_mask.shape))
+            target_Q[non_final_mask] = self.critics[0].forward(
                 non_final_next_states_ordered.view(-1,
                                                    self.n_agents * self.n_states),
                 non_final_next_actions_ordered.view(-1,
                                                     self.n_agents * self.n_actions)).squeeze()
-
+            logging.debug("target_Q")
             # Update with Bellman Equation
             target_Q = (target_Q * self.GAMMA) + (
                 reward_batch[:, agent] * scale_reward).view(-1)
             loss_Q_step = nn.MSELoss()(current_Q, target_Q.detach())
             loss_Q += loss_Q_step
-
+            logging.debug("loss_Q")
             # Meta Actor predicts weighting on each option policy
             pred_options, encodings = self.meta_actor(meta_state)
             # Max entropy regularization
             meta_entropy = (-1 * th.sum((pred_options *
                                          pred_options.log()), dim=1))
-
+            logging.debug("meta_entropy")
             ########################################################
             # CLUSTER LOSS - currently not being used
             ########################################################
@@ -269,7 +275,7 @@ class OMADDPG:
                 action_i = self.actors[opt](meta_state)
                 opt_acts.append(action_i)
             action = th.stack(opt_acts, dim=1)
-
+            logging.debug("get Action")
             # Add an extra loss which tries to maximize distance beteen
             # each of the option sub_policies
             p1_act = action[:, 0, :]
@@ -280,27 +286,28 @@ class OMADDPG:
             w = pred_options.unsqueeze(1)
             act = w.bmm(action)
             act = act.squeeze(1)
-
             # Retain Gradients for actor output
             act.retain_grad()
             ac = action_batch_ordered.clone()
+            logging.debug("act_lone")
             ac[:, 0, :] = act
             whole_action_new = ac.view(self.batch_size, -1)
             actor_loss = - \
                 self.critics[0](state_batch_ordered.view(
                     self.batch_size, -1), whole_action_new)
-
+            logging.debug("actor_loss")
             # Totoal actor loss is (1) maximize critic output, (2) max ent on meta-actor,
             # and (3) sub policy seperation loss
             actor_loss_total += actor_loss.mean() + meta_loss + seperation_loss
-
+            logging.debug("end first for")
+        logging.debug("end for")
         # Update Critic
         loss_Q.backward()
         self.critic_optimizer[0].step()
-
+        logging.debug("loss_Q")
         # Update Actor
         actor_loss_total.backward()
-
+        
         # Gradient Inverting Trick from paper
         params = act[:, 4:]
         high = self.actors[opt].high_action_bound
@@ -321,7 +328,7 @@ class OMADDPG:
         for opt in range(self.n_options):
             self.actor_optimizer[opt].step()
         self.meta_optimizer.step()
-
+        logging.debug("meta_op")
         # Soft update target
         if self.steps_done % 100 == 0 and self.steps_done > 0:
             for i in range(len(self.critics)):
@@ -330,7 +337,7 @@ class OMADDPG:
                 soft_update(self.actors_target[i], self.actors[i], self.tau)
             soft_update(self.meta_actor_target, self.meta_actor, self.tau)
 
-        print("end——UPDATETIME", time.time() - t0)
+        print("end_UPDATETIME", time.time() - t0)
         print("LOSSES", loss_Q, actor_loss_total)
         return loss_Q, actor_loss_total
 
@@ -351,14 +358,19 @@ class OMADDPG:
             # self.steps_done += 1
             return act, int(opt[0].data.cpu().numpy())
         else:
-            act1 = self.actors[0](state_batch)
-            act2 = self.actors[1](state_batch)
+            logging.debug("select_action")
+            logging.debug(str(state_batch))
+            act1 = self.actors[0].forward(state_batch)
+            logging.debug("act1")
+            act2 = self.actors[1].forward(state_batch)
+            logging.debug("act")
             act_raw = th.stack([act1, act2], dim=1)
             w, _ = self.meta_actor(state_batch)
+            logging.debug("meta")
             w2 = w.unsqueeze(1)
             act = w2.bmm(act_raw)
             act = act.squeeze(1)
-
+            logging.debug("act")
             _, opt = w.max(1)
             # self.steps_done += 1
             return act, int(opt[0].data.cpu().numpy())

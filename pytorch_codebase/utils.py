@@ -32,11 +32,11 @@ def set_log_files(savePath):
 
     #logging.basicConfig(level=getattr(logging, 'DEBUG')) #FLAGS.loglevel.upper()))
 
-    debug_fh = logging.FileHandler(Path(savePath).parent / (Path(savePath).stem + ('_ddpg.DEBUG')))
-    info_fh = logging.FileHandler(Path(savePath).parent / (Path(savePath).stem + ('_ddpg.INFO')))
-    warning_fh = logging.FileHandler(Path(savePath).parent / (Path(savePath).stem + ('_ddpg.WARNING')))
-    error_fh = logging.FileHandler(Path(savePath).parent / (Path(savePath).stem + ('_ddpg.ERROR')))
-    critical_fh = logging.FileHandler(Path(savePath).parent / (Path(savePath).stem + ('_ddpg.CRITICAL')))
+    debug_fh = logging.FileHandler(savePath + ('_ddpg.DEBUG'))
+    info_fh = logging.FileHandler( savePath + ('_ddpg.INFO'))
+    warning_fh = logging.FileHandler(savePath + ('_ddpg.WARNING'))
+    error_fh = logging.FileHandler(savePath + ('_ddpg.ERROR'))
+    critical_fh = logging.FileHandler(savePath + ('_ddpg.CRITICAL'))
 
     console = logging.StreamHandler()
     # info_ch = logging.StreamHandler()

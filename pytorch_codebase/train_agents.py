@@ -296,15 +296,16 @@ def run_process(maddpg, player_num, player_queue, root_queue, feedback_queue, st
             # Get latest model if available
             try:
                 maddpg = root_queue.get(block=False)
+                maddpg.to_gpu()
             except:
                 pass
 
             # Timing Queue to prevent processes from racing ahead
             # of main process
-            try:
-                new = feedback_queue.get(timeout=0.1)
-            except:
-                pass
+            #try:
+            #    new = feedback_queue.get(timeout=0.1)
+            #except:
+            #    pass
 
         # If server crashes clean up queues
         if terminal == 5:
@@ -668,20 +669,20 @@ def run():
                 # Creates a lightweight version of the model to send to the
                 # processes
                 copy_maddpg = copy.deepcopy(maddpg)
-                # copy_maddpg.to_cpu()
+                copy_maddpg.to_cpu()
                 copy_maddpg.memory = None
                 r1.put(copy_maddpg)
                 r2.put(copy_maddpg)
             ###################################################################
             logging.debug("MAIN LOOP4")
             # Timing queue for the child processes
-            fdbk1.put(0)
-            fdbk2.put(0)
+            # fdbk1.put(0)
+            # fdbk2.put(0)
 
             # training step every 10 steps
-            if not PLAYBACK:
-                if itr % 10 == 0:
-                    c_loss, a_loss = maddpg.update_policy(prioritized=True)
+            # if not PLAYBACK:
+            #     if itr % 10 == 0:
+            #         c_loss, a_loss = maddpg.update_policy(prioritized=True)
             maddpg.steps_done += 1
             logging.debug("MAIN LOOP5")
             itr += 1

@@ -24,7 +24,7 @@ def set_log_files(savePath):
     print("set logger")
     logging.getLogger().handlers = []
 
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(logging.INFO)
 
     #logging.addLevelName(15, 'verbose')
 

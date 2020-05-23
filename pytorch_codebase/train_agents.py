@@ -17,7 +17,6 @@ import h5py
 import copy
 import traceback
 import subprocess
-from pympler import asizeof
 import time
 import gc
 import logging
@@ -75,9 +74,10 @@ def reset_server():
     and relaunch
     '''
     subprocess.call('killall -9 rcssserver', shell=True)
-    time.sleep(60)
+    print("restart server")
+    time.sleep(10)
     subprocess.Popen(server_launch_command, shell=True)
-    time.sleep(30)
+    time.sleep(10)
 
 
 def connect():
@@ -314,7 +314,7 @@ def run_process(maddpg, player_num, player_queue, root_queue, feedback_queue, st
             feedback_queue.close()
             gc.collect()
             print("SLEEPING UNTIL KILLED")
-            time.sleep(3600)
+            time.sleep(45)
             break
 
 
@@ -553,8 +553,10 @@ def run():
             # processes
             ###################################################################
             if (terminal1 == 5) or (terminal2 == 5):
+                print(terminal1)
                 try:
                     while True:
+                        print("first while true")
                         if OPTIONS:
                             p1_sts, p1_acts, p1_sts1, p1_rws, terminal1, episode_rew1, ep1, o1 = q1.get(
                                 block=False, timeout=0.001)
@@ -565,22 +567,25 @@ def run():
                     pass
                 try:
                     while True:
+                        print("second while true1")
                         if OPTIONS:
                             p2_sts, p2_acts, p2_sts1, p2_rws, terminal2, episode_rew2, ep2, o2 = q2.get(
                                 block=False, timeout=0.001)
                         else:
                             p2_sts, p2_acts, p2_sts1, p2_rws, terminal2, episode_rew2, ep2 = q2.get(
                                 block=False, timeout=0.001)
+                        print("second while true2")
                 except:
                     pass
-                p1.join()
-                p2.join()
+                print("end while")
+                # p1.join()
+                # p2.join()
+                print("jooin")
                 p1.terminate()
                 p2.terminate()
                 del p1
                 del p2
                 print("PROCESSES TERMINATED")
-                time.sleep(300)
                 print("SERVER FAIL")
                 reset_server()
                 print("RESET SERVER")
@@ -595,7 +600,7 @@ def run():
                     target=run_process, args=(copy_maddpg, 1, q2, r2, fdbk2, start_ep))
                 print("Started")
                 p1.start()
-                time.sleep(30)
+                time.sleep(10)
                 p2.start()
                 continue
             ###################################################################

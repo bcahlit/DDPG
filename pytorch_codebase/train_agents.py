@@ -701,9 +701,9 @@ def run():
             # fdbk2.put(0)
 
             # training step every 10 steps
-            # if not PLAYBACK:
-            #     if itr % 10 == 0:
-            #         c_loss, a_loss = maddpg.update_policy(prioritized=True)
+            if not PLAYBACK:
+                if itr % 10 == 0:
+                    c_loss, a_loss = maddpg.update_policy(prioritized=True)
             maddpg.steps_done += 1
             logging.debug("MAIN LOOP5")
             itr += 1

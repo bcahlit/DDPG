@@ -305,11 +305,10 @@ class OMADDPG:
         loss_Q.backward()
         self.critic_optimizer[0].step()
         logging.debug("loss_Q")
-        if torch.isnan(actor_loss_total):
+        if th.isnan(actor_loss_total):
             logging.info(str(actor_loss_total) + str(actor_loss)+ str(meta_loss)+ str(seperation_loss))
         # Update Actor
         actor_loss_total.backward()
-        
         # Gradient Inverting Trick from paper
         params = act[:, 4:]
         high = self.actors[opt].high_action_bound

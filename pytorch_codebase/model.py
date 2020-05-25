@@ -3,7 +3,17 @@ import torch.nn as nn
 import numpy as np
 from torch.autograd import Variable
 import torch.nn.functional as F
+import logging
+from utils import set_log_files
 
+set_log_files("./")
+
+def save_grad(name):
+    def hook(grad):
+        if np.any(np.isnan(grad.cpu().numpy())):
+            logging.info(name)
+            logging.info(str(grad))
+    return hook
 
 class Critic(nn.Module):
     '''
@@ -91,7 +101,7 @@ class Actor(nn.Module):
         r2 = result[:, 4:]
 
         r1 = F.softmax(r1)
-        r2 = F.sigmoid(r2)
+        r2 = th.sigmoid(r2)
 
         if r2.data.type() == 'torch.cuda.FloatTensor':
             r2 = (r2 * (self.high_action_bound.cuda() -
@@ -100,5 +110,5 @@ class Actor(nn.Module):
             r2 = (r2 * (self.high_action_bound - self.low_action_bound)
                   ) + self.low_action_bound
         out = th.cat((r1, r2), 1)
-
+        out.register_hook(save_grad('out'))
         return out

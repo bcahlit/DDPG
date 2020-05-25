@@ -1,5 +1,5 @@
 old_tf_models/
-pytorch_models/
+pytorch_models/*
 *.pyc
 _ddpg.*
 logging/

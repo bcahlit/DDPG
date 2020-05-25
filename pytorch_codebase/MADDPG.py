@@ -305,6 +305,8 @@ class OMADDPG:
         loss_Q.backward()
         self.critic_optimizer[0].step()
         logging.debug("loss_Q")
+        if torch.isnan(actor_loss_total):
+            logging.info(str(actor_loss_total) + str(actor_loss)+ str(meta_loss)+ str(seperation_loss))
         # Update Actor
         actor_loss_total.backward()
         

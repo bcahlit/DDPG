@@ -536,7 +536,7 @@ def run():
             maddpg.episode_done = ep1
             start_ep = ep1
             # Save Model
-            if (maddpg.episode_done > 0) and (maddpg.episode_done % 500 == 0) and (step1 == 0):
+            if (maddpg.episode_done > 0) and (maddpg.episode_done % 10 == 0) and (step1 == 0):
                 if not PLAYBACK:
                     maddpg.save(LOGPATH, LOGNUM)
 

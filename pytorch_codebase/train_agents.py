@@ -42,8 +42,8 @@ N_OPTIONS = 2
 PRIORITIZED = True  # Prioritized Replay T/F
 MAX_EPISODES = 50000  # Max Episodes
 MAX_EP_STEPS = 500  # Max episode length
-ACTOR_LEARNING_RATE = .001  # Base learning rate for the Actor network
-CRITIC_LEARNING_RATE = .001  # Base learning rate for the Critic Network
+ACTOR_LEARNING_RATE = .0001  # Base learning rate for the Actor network
+CRITIC_LEARNING_RATE = .0008  # Base learning rate for the Critic Network
 GAMMA = 0.99  # Discount factor
 TAU = 0.1  # Soft target update param
 
@@ -96,6 +96,7 @@ def take_action_and_step(a, o, env, eps):
     Take an action and step the environment
     '''
     # If explore, choose random action and random parameters
+    # print("action",a)
     if (np.random.random_sample() <= eps) and (not PLAYBACK):
         acts = np.random.uniform(1, 10, 4)
         a[:4] = acts / np.sum(acts)
@@ -121,6 +122,7 @@ def take_action_and_step(a, o, env, eps):
         action = (KICK, a[8], a[9])
 
     # Take action and step
+    
     env.act(*action)
     terminal = env.step()  # terminal state of episode or not
     s1 = env.getState()
@@ -246,6 +248,10 @@ def run_process(maddpg, player_num, player_queue, root_queue, feedback_queue, st
             else:
                 actions = maddpg.select_action(states.unsqueeze(0), player_num)
             actions = actions[0].data
+            if np.any(np.isnan(actions.cpu().numpy())):
+                print("actionnan", actions)
+                print(states)
+                continue
 
             # Take action and step
             if OPTIONS:
@@ -309,12 +315,13 @@ def run_process(maddpg, player_num, player_queue, root_queue, feedback_queue, st
 
         # If server crashes clean up queues
         if terminal == 5:
+            time.sleep(2)
             player_queue.close()
             root_queue.close()
             feedback_queue.close()
             gc.collect()
             print("SLEEPING UNTIL KILLED")
-            time.sleep(45)
+            time.sleep(5)
             break
 
 
@@ -340,6 +347,7 @@ def extra_stats(maddpg, player_num, opt=0):
     good_batch = action_batch.clone()
     bad_batch = action_batch.clone()
     logging.debug("3_1.5")
+    FloatTensor = torch.cuda.FloatTensor if th.cuda.is_available() else torch.FloatTensor
     # For each element in the batch create an example for the different
     # types of actions
     for ind, elem in enumerate(s_batch):
@@ -496,13 +504,21 @@ def run():
             # State_t, Action, State_t+1, transition reward, terminal, episode
             # reward, episode, option #
             if OPTIONS:
-                p1_sts, p1_acts, p1_sts1, p1_rws, terminal1, episode_rew1, ep1, o1 = q1.get()
-                p2_sts, p2_acts, p2_sts1, p2_rws, terminal2, episode_rew2, ep2, o2 = q2.get()
+                try:
+                    p1_sts, p1_acts, p1_sts1, p1_rws, terminal1, episode_rew1, ep1, o1 = q1.get()
+                    p2_sts, p2_acts, p2_sts1, p2_rws, terminal2, episode_rew2, ep2, o2 = q2.get()
+                except:
+                    terminal1 = 5
+                
             else:
                 p1_sts, p1_acts, p1_sts1, p1_rws, terminal1, episode_rew1, ep1 = q1.get()
                 p2_sts, p2_acts, p2_sts1, p2_rws, terminal2, episode_rew2, ep2 = q2.get()
-            ep1, step1 = ep1
-            ep2, step2 = ep2
+            try:
+                ep1, step1 = ep1
+                ep2, step2 = ep2
+            except:
+                print("ep_error",ep1,ep2)
+                continue
 
             if OPTIONS:
                 p1optcounts[o1] += 1
@@ -553,7 +569,7 @@ def run():
             # processes
             ###################################################################
             if (terminal1 == 5) or (terminal2 == 5):
-                print(terminal1)
+                print("mainloop ter",terminal1)
                 try:
                     while True:
                         print("first while true")
@@ -567,14 +583,12 @@ def run():
                     pass
                 try:
                     while True:
-                        print("second while true1")
                         if OPTIONS:
                             p2_sts, p2_acts, p2_sts1, p2_rws, terminal2, episode_rew2, ep2, o2 = q2.get(
                                 block=False, timeout=0.001)
                         else:
                             p2_sts, p2_acts, p2_sts1, p2_rws, terminal2, episode_rew2, ep2 = q2.get(
                                 block=False, timeout=0.001)
-                        print("second while true2")
                 except:
                     pass
                 print("end while")
@@ -590,16 +604,18 @@ def run():
                 reset_server()
                 print("RESET SERVER")
 
-                copy_maddpg = copy.deepcopy(maddpg)
-                copy_maddpg.to_cpu()
-                copy_maddpg.memory = None
-
+                # copy_maddpg = copy.deepcopy(maddpg)
+                # copy_maddpg.to_cpu()
+                # copy_maddpg.memory = None
                 p1 = sp.Process(
-                    target=run_process, args=(copy_maddpg, 0, q1, r1, fdbk1, start_ep))
+                    target=run_process, args=(maddpg, 0, q1, r1, fdbk1, start_ep))
                 p2 = sp.Process(
-                    target=run_process, args=(copy_maddpg, 1, q2, r2, fdbk2, start_ep))
+                    target=run_process, args=(maddpg, 1, q2, r2, fdbk2, start_ep))
                 print("Started")
                 p1.start()
+                time.sleep(4)
+                p2.start()
+                print("Started")
                 time.sleep(10)
                 p2.start()
                 continue

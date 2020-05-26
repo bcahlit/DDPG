@@ -106,12 +106,14 @@ class OMADDPG:
             str(lognum) + "_" + str(episode_done)
         for i in range(self.n_agents):
             actor_path = os.path.join(path, 'actor_agent_%d.pt' % (i))
-            critic_path = os.path.join(path, 'critic_agent_%d.pt' % (i))
             if os.path.exists(actor_path):
                 self.actors[i] = th.load(actor_path)
                 self.actors_target[i] = th.load(actor_path)
-                self.critics[i] = th.load(critic_path)
-                self.critics_target[i] = th.load(critic_path)
+
+        critic_path = os.path.join(path, 'critic_agent_0.pt' )
+        if os.path.exists(critic_path):
+                self.critics[0] = th.load(critic_path)
+                self.critics_target[0] = th.load(critic_path)
 
     def to_gpu(self):
         '''
@@ -267,6 +269,11 @@ class OMADDPG:
             # match_clusters = (diff == pred_option_max).float()
             # meta_loss = match_clusters.mean(dim=0) + (-0.1 * entropy)
             meta_loss = (-0.01 * meta_entropy.mean())
+            if(th.isnan(meta_loss)):
+                # th.set_printoptions(threshold=10000)
+                logging.info(str(meta_entropy))               
+                logging.info(str(meta_entropy.sum()))
+                logging.info(str(meta_entropy.mean()))
             ########################################################
 
             # Get action for each option
@@ -299,6 +306,8 @@ class OMADDPG:
             # Totoal actor loss is (1) maximize critic output, (2) max ent on meta-actor,
             # and (3) sub policy seperation loss
             actor_loss_total += actor_loss.mean() + meta_loss + seperation_loss
+            if th.isnan(actor_loss_total):
+                logging.info(str(actor_loss)+ str(actor_loss.mean())+ str(meta_loss)+ str(seperation_loss))
             logging.debug("end first for")
         logging.debug("end for")
         # Update Critic

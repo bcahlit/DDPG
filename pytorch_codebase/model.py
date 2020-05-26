@@ -66,7 +66,7 @@ class MetaActor(nn.Module):
     def forward(self, obs):
         result = F.relu(self.FC1(obs))
         result = F.relu(self.FC2(result))
-        result = F.relu(self.FC3(result))
+        result = F.tanh(self.FC3(result))
         return F.softmax(self.FC4(result), dim=1), result
 
 
@@ -110,5 +110,5 @@ class Actor(nn.Module):
             r2 = (r2 * (self.high_action_bound - self.low_action_bound)
                   ) + self.low_action_bound
         out = th.cat((r1, r2), 1)
-        out.register_hook(save_grad('out'))
+        # out.register_hook(save_grad('out'))
         return out

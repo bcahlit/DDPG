@@ -42,8 +42,8 @@ N_OPTIONS = 2
 PRIORITIZED = True  # Prioritized Replay T/F
 MAX_EPISODES = 50000  # Max Episodes
 MAX_EP_STEPS = 500  # Max episode length
-ACTOR_LEARNING_RATE = .0001  # Base learning rate for the Actor network
-CRITIC_LEARNING_RATE = .0008  # Base learning rate for the Critic Network
+ACTOR_LEARNING_RATE = .001  # Base learning rate for the Actor network
+CRITIC_LEARNING_RATE = .001  # Base learning rate for the Critic Network
 GAMMA = 0.99  # Discount factor
 TAU = 0.1  # Soft target update param
 
@@ -248,10 +248,11 @@ def run_process(maddpg, player_num, player_queue, root_queue, feedback_queue, st
             else:
                 actions = maddpg.select_action(states.unsqueeze(0), player_num)
             actions = actions[0].data
-            if np.any(np.isnan(actions.cpu().numpy())):
-                print("actionnan", actions)
-                print(states)
-                continue
+            # if np.any(np.isnan(actions.cpu().numpy())):
+            #     logging.info("actionnan"+ str(actions))
+            #     logging.info(str(states))
+            #     print("is nan")
+            #     continue
 
             # Take action and step
             if OPTIONS:
@@ -302,7 +303,7 @@ def run_process(maddpg, player_num, player_queue, root_queue, feedback_queue, st
             # Get latest model if available
             try:
                 maddpg = root_queue.get(block=False)
-                maddpg.to_gpu()
+                # maddpg.to_gpu()
             except:
                 pass
 
@@ -457,8 +458,8 @@ def run():
     f.swmr_mode = True  # NECESSARY FOR SIMULTANEOUS READ/WRITE
 
     # Creates queue
-    q1 = sp.Queue()
-    q2 = sp.Queue()
+    q1 = sp.Queue(5000)
+    q2 = sp.Queue(5000)
     r1 = sp.Queue()
     r2 = sp.Queue()
     fdbk1 = sp.Queue()
@@ -536,7 +537,7 @@ def run():
             maddpg.episode_done = ep1
             start_ep = ep1
             # Save Model
-            if (maddpg.episode_done > 0) and (maddpg.episode_done % 10 == 0) and (step1 == 0):
+            if (maddpg.episode_done > 0) and (maddpg.episode_done % 300 == 0) and (step1 == 0):
                 if not PLAYBACK:
                     maddpg.save(LOGPATH, LOGNUM)
 
@@ -689,8 +690,8 @@ def run():
                 logging.debug("MAIN LOOP3.6")
                 # Creates a lightweight version of the model to send to the
                 # processes
-                copy_maddpg = copy.deepcopy(maddpg)
-                copy_maddpg.to_cpu()
+                copy_maddpg = copy.copy(maddpg)
+                # copy_maddpg.to_cpu()
                 copy_maddpg.memory = None
                 r1.put(copy_maddpg)
                 r2.put(copy_maddpg)

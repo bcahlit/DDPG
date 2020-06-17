@@ -474,6 +474,7 @@ def run():
                         batch_size, capacity, eps_before_train)
 
     # If playing back set which model to load
+    # maddpg.load(LOGPATH, 9, 100)
     if PLAYBACK:
         maddpg.load(LOGPATH, 20, 4500)
 

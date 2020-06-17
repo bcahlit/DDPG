@@ -60,13 +60,14 @@ class MetaActor(nn.Module):
         self.FC1 = nn.Linear(obs_dim, 512)
         self.FC2 = nn.Linear(512, 256)
         self.FC3 = nn.Linear(256, 128)
+        self.layer_n = nn.LayerNorm(128)
         self.FC4 = nn.Linear(128, act_dim)
 
     # obs: batch_size * obs_dim
     def forward(self, obs):
         result = F.relu(self.FC1(obs))
         result = F.relu(self.FC2(result))
-        result = F.tanh(self.FC3(result))
+        result = self.layer_n(F.relu(self.FC3(result)))
         return F.softmax(self.FC4(result), dim=1), result
 
 
@@ -92,10 +93,10 @@ class Actor(nn.Module):
 
     # action output between -2 and 2
     def forward(self, obs):
-        result = self.leakyrelu(self.FC1(obs))
-        result = self.leakyrelu(self.FC2(result))
-        result = self.leakyrelu(self.FC3(result))
-        result = self.leakyrelu(self.FC4(result))
+        result = F.softsign(self.FC1(obs))
+        result = F.softsign(self.FC2(result))
+        result = F.softsign(self.FC3(result))
+        result = F.softsign(self.FC4(result))
         result = self.FC5(result)
         r1 = result[:, :4]
         r2 = result[:, 4:]

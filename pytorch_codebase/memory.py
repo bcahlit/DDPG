@@ -33,7 +33,7 @@ class ReplayMemory:
 
         self.position = (self.position + 1) % self.capacity
 
-        if self.position % 1000 == 0:
+        if self.position % 5000 == 0:
             self.memory = sorted(
                 self.memory, key=lambda row: (row[self.tkm["rewards"]]).mean())
 
